@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Avbryt äldre körningar på samma gren när du pushar igen
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets-check:
+    name: Secrets check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail if secret files are tracked by Git
+        run: |
+          bad=$(git ls-files | grep -E '(^|/)\.env$|(^|/)secrets\.h$' || true)
+          if [ -n "$bad" ]; then
+            echo "These files must never be committed:"
+            echo "$bad"
+            exit 1
+          fi
+          echo "No secret files are tracked."
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: sim/requirements.txt
+
+      - name: Install build tools and pyserial
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ libssl-dev
+          pip install -r sim/requirements.txt
+
+      - name: Protocol and 16-node network tests (C++ vs Python)
+        run: sh host_test/run_sim.sh
+
+      # Testerna startar en nod som bakgrundsprocess. Utskriften går via en fil
+      # så att steget inte hänger sig på en process som lever kvar.
+      - name: Simulator tests
+        run: |
+          status=0
+          timeout 300 python3 -u sim/test_sim.py > test_sim.log 2>&1 || status=$?
+          cat test_sim.log
+          pkill -f '[n]ode_host' || true
+          exit $status
+
+      - name: Serial tests
+        run: |
+          status=0
+          timeout 120 python3 -u sim/test_serial.py > test_serial.log 2>&1 || status=$?
+          cat test_serial.log
+          pkill -f '[n]ode_host' || true
+          exit $status
+
+  firmware:
+    name: Firmware build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            .pio
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      # .env finns inte i repot med flit. Bygget behöver en giltig .env,
+      # så vi skapar en engångsfil med slumpad nyckel. Den används bara här
+      # och är inte din riktiga GROUP_KEY.
+      - name: Create a throwaway .env (CI only)
+        run: |
+          {
+            echo "NODE_ID=1"
+            echo "ESPNOW_CHANNEL=1"
+            echo "GROUP_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(16))')"
+          } > .env
+
+      - name: Build
+        run: pio run
