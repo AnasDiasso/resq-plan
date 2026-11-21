@@ -305,8 +305,8 @@ project/
 ### 1. Clone the Repository
 
 ```bash
-git clone <YOUR_REPOSITORY_URL>
-cd <YOUR_PROJECT_DIRECTORY>
+git clone https://github.com/AnasDiasso/resq-plan.git
+cd resq-plan
 ```
 
 ### 2. Create Configuration
@@ -573,3 +573,8 @@ If the project is open source, consider including an appropriate license file su
 ## Project Goal
 
 Demonstrate a distributed evacuation guidance system in which every node can independently detect alarms, communicate with other nodes, and calculate evacuation routes without depending on a central controller.
+
+
+## Author
+
+Anas Diasso – [GitHub profile](https://github.com/AnasDiasso)
