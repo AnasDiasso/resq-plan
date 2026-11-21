@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>resQ-simulator</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --panel: #ffffff; --ink: #1b1f24; --muted: #5c6670; --line: #d9dde2;
+    --red: #d70000; --green: #0a9a45; --yellow: #e8a900; --blue: #1e5adc; --warn: #b00020;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #14171a; --panel: #1d2125; --ink: #e8eaed; --muted: #9aa4ae; --line: #343a40; --warn: #ff6b6b; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  header h1 { font-size: 17px; margin: 0; font-weight: 650; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); display: inline-block; }
+  .dot.on { background: var(--green); } .dot.off { background: var(--red); }
+  #conn { color: var(--muted); font-size: 13px; margin-left: auto; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; padding: 16px; align-items: start; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+  #wrap { position: relative; padding: 0; overflow: hidden; }
+  canvas { display: block; width: 100%; height: auto; cursor: pointer; }
+  #tip { position: absolute; pointer-events: none; background: #1b1f24; color: #fff; padding: 8px 10px; border-radius: 8px; font-size: 13px; max-width: 280px; display: none; z-index: 3; }
+  button { font: inherit; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+  button:hover { border-color: var(--blue); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+  .chip { background: var(--red); color: #fff; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+  .none { color: var(--muted); font-size: 14px; }
+  .legend div { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 14px; }
+  .sw { width: 22px; height: 6px; border-radius: 3px; }
+  .board { padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .board:first-of-type { border-top: 0; }
+  .ok { color: var(--green); } .bad { color: var(--warn); font-weight: 600; }
+  #log { max-height: 280px; overflow: auto; font-size: 13px; }
+  #log div { padding: 3px 0; border-top: 1px solid var(--line); }
+  #log div:first-child { border-top: 0; }
+  #log .t { color: var(--muted); margin-right: 6px; font-variant-numeric: tabular-nums; }
+  #log .larm { color: var(--red); font-weight: 600; } #log .fel, #log .varning { color: var(--warn); }
+  .side { display: grid; gap: 12px; }
+.chip.loose { background: var(--blue); cursor: grab; touch-action: none; user-select: none; }
+  #cv { touch-action: none; }
+  .ghost { position: fixed; display: none; pointer-events: none; transform: translate(-50%,-50%); background: var(--blue); color: #fff; padding: 6px 12px; border-radius: 16px; font-weight: 700; z-index: 20; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+  .ghost.ok { background: var(--green); }
+.viewbtn { position: absolute; top: 12px; right: 12px; z-index: 4; display: flex; gap: 10px; align-items: center; font-size: 13px; }
+  .viewbtn label { display: flex; gap: 6px; align-items: center; background: rgba(255,255,255,.85); padding: 4px 8px; border-radius: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>resQ-simulator</h1>
+  <span id="conn"><span class="dot" id="dot"></span> <span id="connText">ansluter…</span></span>
+</header>
+<main>
+  <div class="card" id="wrap">
+    <div class="viewbtn"><label id="tiltBox" style="display:none">lutning <input type="range" id="tilt" min="30" max="85" value="50"></label><button id="v3" title="Växla mellan platt karta och våningar under varandra">3D-vy</button></div>
+    <canvas id="cv"></canvas>
+    <div id="tip"></div>
+  </div>
+  <div class="side">
+    <div class="card">
+      <h2>Larm just nu</h2>
+      <div class="chips" id="alarms"></div>
+      <p style="margin:10px 0 0"><button id="clear">Rensa alla larm</button></p>
+      <p class="none" style="margin:10px 0 0">Klicka på en nod på kartan för att larma eller stänga av. Klickar du på en nod med riktigt kort trycks knappen på kortet.</p>
+    </div>
+    <div class="card">
+      <h2>Lösa noder</h2>
+      <div class="chips" id="tray"></div>
+      <p style="margin:10px 0 0"><button id="restoreAll">Sätt tillbaka alla</button></p>
+      <p class="none" style="margin:10px 0 0">Dra en nod från kartan för att ta bort den: den lämnar en grop. Dubbelklicka på den (i listan eller på gropen på kartan) så hamnar den på sin plats igen, eller dra den från listan till gropen. Riktiga kort kan inte dras bort.</p>
+    </div>
+    <div class="card">
+      <h2>Riktiga kort</h2>
+      <div id="boards"></div>
+    </div>
+    <div class="card legend">
+      <h2>Teckenförklaring</h2>
+      <div><span class="sw" style="background:var(--red)"></span> rött kryss lyser: noden larmar (grått = släckt)</div>
+      <div><span class="sw" style="background:var(--green)"></span> grön triangel (LEFT, den vänstra)</div>
+      <div><span class="sw" style="background:var(--yellow)"></span> gul triangel (RIGHT, den högra)</div>
+      <div><span class="sw" style="background:#8b8f97"></span> grop: noden är bortdragen, platsen är ledig</div>
+      <div><span class="sw" style="background:var(--blue)"></span> blå ring: nod med riktigt kort</div>
+      <div><span class="sw" style="background:var(--warn)"></span> röd ring: kortet visar något annat än simuleringen</div>
+    </div>
+    <div class="card">
+      <h2>Händelser</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+</main>
+<script>
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const tip = document.getElementById('tip');
+const img = new Image();
+let state = null, hover = null, scale = 1;
+const C = { red: '#d70000', green: '#0a9a45', yellow: '#e8a900', blue: '#1e5adc', warn: '#d70000' };
+
+img.onload = () => { cv.width = img.naturalWidth; cv.height = img.naturalHeight; applyView(); };
+img.src = '/karta.png';
+let lamps = null;   // trianglar och kryss ur bilden (sim/lamps.json); utan den ritas pilar som förr
+fetch('/lamps.json').then(r => r.ok ? r.json() : null).then(j => { lamps = j; draw(); }).catch(() => {});
+
+function grow(poly, f) {                      // förstora triangeln runt tyngdpunkten så originalet täcks
+  const cx = (poly[0][0] + poly[1][0] + poly[2][0]) / 3, cy = (poly[0][1] + poly[1][1] + poly[2][1]) / 3;
+  return poly.map(([x, y]) => [cx + (x - cx) * f, cy + (y - cy) * f]);
+}
+function tri(poly, fill, edge) {
+  ctx.beginPath(); poly.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath();
+  ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = edge; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.stroke();
+}
+function drawLamps(n, flat) {                       // returnerar true om noden ritades med bildens lampor
+  const L = lamps && lamps.nodes && lamps.nodes[n.id];
+  if (!L) return false;
+  const lit = { LEFT: L.lamp_map.LEFT, RIGHT: L.lamp_map.RIGHT };
+  L.triangles.forEach((t, i) => {
+    let fill = '#b9bcc2';                     // neutral grå = släckt
+    if (n.mode === 'LEFT' && lit.LEFT === i) fill = C.green;
+    if (n.mode === 'RIGHT' && lit.RIGHT === i) fill = C.yellow;
+    tri(t.poly, fill, fill === '#b9bcc2' ? '#8a8e96' : '#222');
+  });
+  if (L.cross) {
+    const c = L.cross, on = n.mode === 'X';
+    const pulse = on && !REDUCED ? 0.5 + 0.5 * Math.sin(performance.now() / 180) : 1;
+    const r = c.size / 2 + 4 + (on ? 6 * pulse - 3 : 0);
+    if (on) { ctx.save(); ctx.shadowColor = 'rgba(215,0,0,0.9)'; ctx.shadowBlur = 8 + 22 * pulse; }
+    ctx.strokeStyle = on ? `rgba(215,0,0,${0.55 + 0.45 * pulse})` : '#8a8e96'; ctx.lineWidth = on ? 8 + 4 * pulse : 4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(c.x - r, c.y - r); ctx.lineTo(c.x + r, c.y + r);
+    ctx.moveTo(c.x - r, c.y + r); ctx.lineTo(c.x + r, c.y - r); ctx.stroke();
+    if (on) ctx.restore();
+  }
+  if (n.mode === 'NONE' && !flat) { ctx.fillStyle = C.red; ctx.font = 'bold 34px system-ui'; ctx.fillText('?', n.x - 10, n.y - 18); }
+  return true;
+}
+
+function arrow(x1, y1, x2, y2, col, w) {
+  ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  const a = Math.atan2(y2 - y1, x2 - x1), L = 24;
+  for (const s of [-0.5, 0.5]) {
+    ctx.beginPath(); ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - L * Math.cos(a + s), y2 - L * Math.sin(a + s)); ctx.stroke();
+  }
+}
+
+const REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+let drag = null;                              // {id, x, y, moved, from: 'map'|'tray'}
+let animOn = false;
+function pit(n, flat) {                             // grop: platsen är ledig (två gråa nyanser, ser nedsänkt ut)
+  ctx.fillStyle = '#e4e6ea'; ctx.beginPath(); ctx.arc(n.x + 1.5, n.y + 1.5, 14, 0, 7); ctx.fill();   // ljus kant nedtill
+  ctx.fillStyle = '#8b8f97'; ctx.beginPath(); ctx.arc(n.x, n.y, 14, 0, 7); ctx.fill();
+  ctx.fillStyle = '#bcc0c7'; ctx.beginPath(); ctx.arc(n.x + 2, n.y + 2, 12, 0, 7); ctx.fill();
+  if (!flat) { ctx.fillStyle = '#555a63'; ctx.font = 'bold 20px system-ui'; ctx.fillText(n.id + ' saknas', n.x + 20, n.y - 14); }
+}
+
+function wave(n, t) {                         // larmet sprider sig som ringar
+  for (let k = 0; k < 3; k++) {
+    const ph = ((t / 2400) + k / 3) % 1, r = 20 + ph * 380;
+    ctx.strokeStyle = `rgba(215,0,0,${0.55 * (1 - ph)})`; ctx.lineWidth = 8 * (1 - ph) + 2;
+    ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, 7); ctx.stroke();
+  }
+}
+
+function pathPoints(n, byId) {                // punkterna längs vägen ut, med en kort bit ut genom utgången
+  const pts = [];
+  n.path.forEach(id => {
+    if (id === 'UT') { const l = pts[pts.length - 1], sg = (byId[n.path[n.path.length - 2]] || {}).exit_dir === 'up' ? -1 : 1; if (l) pts.push([l[0], l[1] + sg * 60]); }
+    else if (byId[id]) pts.push([byId[id].x, byId[id].y]);
+  });
+  return pts;
+}
+function runner(pts, t) {                     // en puls som löper längs vägen
+  if (pts.length < 2) return;
+  const seg = [], tot = pts.slice(1).reduce((a, p, i) => { const d = Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1]); seg.push(d); return a + d; }, 0);
+  if (!tot) return;
+  const at = d => { let i = 0; while (i < seg.length - 1 && d > seg[i]) { d -= seg[i]; i++; } const f = Math.min(1, d / (seg[i] || 1)); return [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * f, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * f]; };
+  const head = ((t * 0.3) % (tot + 120));
+  for (let k = 0; k < 8; k++) {
+    const d = head - k * 14; if (d < 0 || d > tot) continue;
+    const [x, y] = at(d);
+    ctx.fillStyle = `rgba(255,255,255,${0.95 - k * 0.11})`; ctx.strokeStyle = `rgba(30,90,220,${0.9 - k * 0.1})`; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(x, y, 10 - k * 0.8, 0, 7); ctx.fill(); ctx.stroke();
+  }
+}
+
+// ---------- 3D-vy: våningarna som plan under varandra ----------
+let view3d = false, L3 = null, tilt = 0.5;
+try { view3d = localStorage.getItem('view3d') === '1'; const tv = parseFloat(localStorage.getItem('tilt3d')); if (tv >= 0.3 && tv <= 0.85) tilt = tv; } catch (e) {}
+const SL = { 1: [95, 358], 2: [400, 640], 3: [676, null] };   // var våningarna ligger i bilden (y uppifrån, utan de mörka banden)
+let SLB = null;                                               // tätt omslutande ruta per våning (utan vit marginal)
+function sliceBounds() {
+  if (SLB || !img.naturalWidth) return SLB;
+  const w = img.naturalWidth, h = img.naturalHeight, oc = document.createElement('canvas'); oc.width = w; oc.height = h;
+  const o = oc.getContext('2d'); o.drawImage(img, 0, 0);
+  let data; try { data = o.getImageData(0, 0, w, h).data; } catch (e) { data = null; }
+  SLB = {};
+  for (const f of [1, 2, 3]) {
+    const yt = SL[f][0], yb = SL[f][1] || h - 30;
+    let x0 = w, x1 = 0, y0 = yb, y1 = yt;
+    if (data) for (let y = yt; y < yb; y += 2) for (let x = 0; x < w; x += 2) {
+      const k = (y * w + x) * 4;
+      if (data[k] < 235 || data[k + 1] < 235 || data[k + 2] < 235) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    }
+    if (x1 <= x0 || y1 <= y0) { x0 = 0; x1 = w; y0 = yt; y1 = yb; }
+    SLB[f] = { x0: Math.max(0, x0 - 12), x1: Math.min(w, x1 + 12), y0: Math.max(yt, y0 - 12), y1: Math.min(yb, y1 + 12) };
+  }
+  return SLB;
+}
+function layout3d() {
+  if (!state || !img.naturalWidth || !sliceBounds()) return null;
+  const A = 0.8, SH = 0.4, S = tilt, GAP = 62, TH = 16;
+  const byId = Object.fromEntries(state.nodes.map(n => [n.id, n]));
+  const out = { A, SH, S, TH, f: {} };
+  let top = 70, minX = 1e9, maxX = -1e9;
+  for (const f of [3, 2, 1]) {                                  // plan 3 överst, entréplanet längst ner
+    const ref = byId[f]; if (!ref) return null;                 // trapphuset (nod 1,2,3) styr uppställningen så att de hamnar rakt över varandra
+    const b = SLB[f], ry = ref.y;
+    const Ay = top - S * (b.y0 - ry);
+    const F = { b, ry, Ay, top, bot: top + S * (b.y1 - b.y0) };
+    F.M = [A, 0, SH, S, -SH * ry, Ay - S * ry];                 // x' = A x + SH (y - ry) + E, y' = S (y - ry) + Ay (E läggs på nedan)
+    for (const [x, y] of [[b.x0, b.y0], [b.x1, b.y0], [b.x0, b.y1], [b.x1, b.y1]]) {
+      const px = A * x + SH * (y - ry); if (px < minX) minX = px; if (px > maxX) maxX = px;
+    }
+    out.f[f] = F; top = F.bot + TH + GAP;
+  }
+  const E = 40 - minX;
+  for (const f of [1, 2, 3]) out.f[f].M[4] += E;
+  out.w = Math.round(maxX + E + 50); out.h = Math.round(top - GAP + 60);
+  return out;
+}
+function applyView() {
+  L3 = view3d ? layout3d() : null;
+  if (view3d && !L3) view3d = false;
+  if (img.naturalWidth) { cv.width = L3 ? L3.w : img.naturalWidth; cv.height = L3 ? L3.h : img.naturalHeight; }
+  const b = document.getElementById('v3'); if (b) b.textContent = view3d ? '2D-vy' : '3D-vy';
+  const t = document.getElementById('tiltBox'); if (t) t.style.display = view3d ? 'flex' : 'none';
+  draw();
+}
+function pt(n) {
+  if (!L3) return [n.x, n.y];
+  const M = L3.f[n.floor].M; return [M[0] * n.x + M[2] * n.y + M[4], M[1] * n.x + M[3] * n.y + M[5]];
+}
+function draw3d(t) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const byId = Object.fromEntries(state.nodes.map(n => [n.id, n]));
+  const proj = (f, x, y) => { const M = L3.f[f].M; return [M[0] * x + M[2] * y + M[4], M[1] * x + M[3] * y + M[5]]; };
+  const alarmFloor = {}; state.nodes.forEach(n => { if (n.mode === 'X' && !n.removed) alarmFloor[n.floor] = true; });
+  const pulse = 0.5 + 0.5 * Math.sin(t / 250);
+  // trapphusschakt: en tunn streckad linje bakom plattorna, som går ner genom alla våningar och syns i mellanrummen
+  for (const [a, b] of state.links || []) {
+    const A = byId[a], B = byId[b]; if (!A || !B) continue;
+    const up = A.floor > B.floor ? A : B, lo = A.floor > B.floor ? B : A, pu = pt(up), pl = pt(lo);
+    ctx.setLineDash([8, 8]); ctx.strokeStyle = 'rgba(30,90,220,0.55)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(pu[0], pu[1]); ctx.lineTo(pl[0], pl[1]); ctx.stroke(); ctx.setLineDash([]);
+  }
+  for (const f of [3, 2, 1]) {
+    const F = L3.f[f], b = F.b, TH = L3.TH;
+    const tl = proj(f, b.x0, b.y0), tr = proj(f, b.x1, b.y0), br = proj(f, b.x1, b.y1), bl = proj(f, b.x0, b.y1);
+    // platta: mjuk skugga, sedan kanter med färgövergång
+    ctx.save(); ctx.shadowColor = 'rgba(20,30,50,0.28)'; ctx.shadowBlur = 26; ctx.shadowOffsetY = 20;
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(tl[0], tl[1]); ctx.lineTo(tr[0], tr[1]); ctx.lineTo(br[0], br[1]); ctx.lineTo(bl[0], bl[1]); ctx.closePath(); ctx.fill(); ctx.restore();
+    let g = ctx.createLinearGradient(0, bl[1], 0, bl[1] + TH); g.addColorStop(0, '#c4c9d0'); g.addColorStop(1, '#8a9099');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(bl[0], bl[1]); ctx.lineTo(br[0], br[1]); ctx.lineTo(br[0], br[1] + TH); ctx.lineTo(bl[0], bl[1] + TH); ctx.closePath(); ctx.fill();
+    g = ctx.createLinearGradient(0, tr[1], 0, br[1] + TH); g.addColorStop(0, '#a9aeb6'); g.addColorStop(1, '#6f757d');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(br[0], br[1]); ctx.lineTo(tr[0], tr[1]); ctx.lineTo(tr[0], tr[1] + TH); ctx.lineTo(br[0], br[1] + TH); ctx.closePath(); ctx.fill();
+    ctx.save(); ctx.setTransform(...F.M);
+    ctx.beginPath(); ctx.rect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0); ctx.clip();
+    ctx.drawImage(img, 0, 0);
+    ctx.fillStyle = 'rgba(255,255,255,0.40)'; ctx.fillRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+    ctx.restore();
+    ctx.strokeStyle = alarmFloor[f] ? `rgba(215,0,0,${0.5 + 0.5 * pulse})` : 'rgba(255,255,255,0.9)';   // kantlinje, röd glöd på våning med larm
+    ctx.lineWidth = alarmFloor[f] ? 5 : 2; ctx.lineJoin = 'round';
+    if (alarmFloor[f]) { ctx.save(); ctx.shadowColor = 'rgba(215,0,0,0.8)'; ctx.shadowBlur = 18; }
+    ctx.beginPath(); ctx.moveTo(tl[0], tl[1]); ctx.lineTo(tr[0], tr[1]); ctx.lineTo(br[0], br[1]); ctx.lineTo(bl[0], bl[1]); ctx.closePath(); ctx.stroke();
+    if (alarmFloor[f]) ctx.restore();
+    // våningsskylt
+    const lab = f === 1 ? 'PLAN 1 · ENTRÉ' : 'PLAN ' + f + (alarmFloor[f] ? ' · LARM' : '');
+    ctx.font = 'bold 22px system-ui'; const tw = ctx.measureText(lab).width + 22;
+    ctx.fillStyle = alarmFloor[f] ? C.red : '#2b3038'; ctx.beginPath(); ctx.roundRect(14, F.top - 8, tw, 34, 17); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillText(lab, 25, F.top + 16);
+  }
+  // väg ut för noden under pekaren (genom trapphusen)
+  if (hover && hover.path.length) {
+    const pts = []; hover.path.forEach(id => {
+      if (id === 'UT') { const l = pts[pts.length - 1]; if (l) pts.push([l[0], l[1] + 50]); } else if (byId[id]) pts.push(pt(byId[id]));
+    });
+    ctx.strokeStyle = 'rgba(30,90,220,0.55)'; ctx.lineWidth = 9; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.beginPath(); pts.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.stroke();
+    if (!REDUCED) runner(pts, t);
+  }
+  // varje nod ritas i sin plattas plan; text och prickar ritas upprätta
+  for (const n of state.nodes) {
+    const F = L3.f[n.floor], b = F.b;
+    ctx.save(); ctx.setTransform(...F.M);
+    ctx.beginPath(); ctx.rect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0); ctx.clip();
+    if (!REDUCED && n.mode === 'X' && !n.removed) wave(n, t);
+    if (n.removed) pit(n, true); else drawLamps(n, true);
+    ctx.restore();
+  }
+  for (const n of state.nodes) {
+    const p = pt(n);
+    if (n.removed) { ctx.fillStyle = '#555a63'; ctx.font = 'bold 20px system-ui'; ctx.fillText(n.id + ' saknas', p[0] + 18, p[1] - 12); continue; }
+    if (n.mode === 'NONE') { ctx.fillStyle = C.red; ctx.font = 'bold 30px system-ui'; ctx.fillText('?', p[0] - 8, p[1] - 14); }
+    if (n.real) { ctx.strokeStyle = n.match === false ? C.warn : (n.match === true ? C.green : C.blue); ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(p[0], p[1], 19, 0, 7); ctx.stroke(); }
+    ctx.fillStyle = C.blue; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(p[0], p[1], 10, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#111'; ctx.font = 'bold 20px system-ui'; ctx.fillText(n.id, p[0] + 13, p[1] - 14);
+  }
+  if (drag && drag.moved && drag.from === 'map') {
+    ctx.fillStyle = 'rgba(30,90,220,0.85)'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(drag.x, drag.y, 16, 0, 7); ctx.fill(); ctx.stroke();
+  }
+}
+
+function draw(t = performance.now()) {
+  if (!img.complete || !img.naturalWidth) return;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  if (L3 && state) { return draw3d(t); }
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.drawImage(img, 0, 0);
+  ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fillRect(0, 0, cv.width, cv.height);
+  if (!state) return;
+  const byId = Object.fromEntries(state.nodes.map(n => [n.id, n]));
+
+  // vägen ut för noden under pekaren
+  if (hover && hover.path.length) {
+    ctx.strokeStyle = 'rgba(30,90,220,0.55)'; ctx.lineWidth = 12; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.beginPath();
+    hover.path.forEach((id, k) => {
+      if (id === 'UT') return;
+      const n = byId[id];
+      k === 0 ? ctx.moveTo(n.x, n.y) : ctx.lineTo(n.x, n.y);
+    });
+    ctx.stroke();
+    if (!REDUCED) runner(pathPoints(hover, byId), t);
+  }
+  if (!REDUCED) for (const n of state.nodes) if (n.mode === 'X' && !n.removed) wave(n, t);
+
+  for (const n of state.nodes) {
+    if (n.removed) { pit(n); continue; }
+    if (drawLamps(n)) {
+      // lamporna ritade av bilden; ingen pil behövs
+    } else if (n.mode === 'X') {
+      ctx.strokeStyle = C.red; ctx.lineWidth = 10; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(n.x - 26, n.y - 26); ctx.lineTo(n.x + 26, n.y + 26);
+      ctx.moveTo(n.x - 26, n.y + 26); ctx.lineTo(n.x + 26, n.y - 26); ctx.stroke();
+    } else if (n.mode === 'LEFT' || n.mode === 'RIGHT') {
+      const col = n.mode === 'LEFT' ? C.green : C.yellow;
+      if (n.next === 'UT') {
+        const sgn = n.exit_dir === 'up' ? -1 : 1;
+        arrow(n.x, n.y, n.x, n.y + sgn * 60, col, 9);
+        ctx.fillStyle = col; ctx.font = 'bold 22px system-ui'; ctx.fillText('UT', n.x + 14, n.y + sgn * 34 + 8);
+      } else if (n.next != null) {
+        const q = byId[n.next], vx = q.x - n.x, vy = q.y - n.y, L = Math.hypot(vx, vy), k = Math.min(70, L * 0.45) / L;
+        arrow(n.x, n.y, n.x + vx * k, n.y + vy * k, col, 7);
+      }
+    } else if (n.mode === 'NONE') {
+      ctx.fillStyle = C.red; ctx.font = 'bold 34px system-ui'; ctx.fillText('?', n.x - 10, n.y - 18);
+    }
+    // nodprick och ring
+    if (n.real) {
+      ctx.strokeStyle = n.match === false ? C.warn : (n.match === true ? C.green : C.blue);
+      ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(n.x, n.y, 24, 0, 7); ctx.stroke();
+    }
+    ctx.fillStyle = C.blue; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(n.x, n.y, 12, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#111'; ctx.font = 'bold 22px system-ui'; ctx.fillText(n.id, n.x + 16, n.y - 18);
+  }
+  if (drag && drag.moved && drag.from === 'map') {   // noden som bärs med musen
+    ctx.fillStyle = 'rgba(30,90,220,0.85)'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(drag.x, drag.y, 18, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#111'; ctx.font = 'bold 22px system-ui'; ctx.fillText(drag.id, drag.x + 22, drag.y - 20);
+  }
+}
+
+// animationsloop: går bara när något rör sig
+function needAnim() {
+  return !REDUCED && state && (state.nodes.some(n => n.mode === 'X' && !n.removed) || (hover && hover.path.length));
+}
+function loop(t) { draw(t); if (needAnim()) requestAnimationFrame(loop); else animOn = false; }
+function kick() { if (!animOn && needAnim()) { animOn = true; requestAnimationFrame(loop); } }
+
+function render() {
+  if (!state) return;
+  const al = document.getElementById('alarms');
+  al.innerHTML = state.alarms.length ? state.alarms.map(i => `<span class="chip">nod ${i}</span>`).join('') : '<span class="none">inga larm</span>';
+  const b = document.getElementById('boards');
+  b.innerHTML = state.boards.length ? state.boards.map(x => {
+    const n = state.nodes.find(n => n.id === x.node_id);
+    let st = '';
+    if (n && n.real_signal != null) st = n.match === false ? `<span class="bad">visar ${n.real_signal}, simuleringen ${n.mode === 'NONE' ? 'OFF' : n.mode}</span>`
+      : (n.match === true ? `<span class="ok">visar ${n.real_signal} (stämmer)</span>` : `visar ${n.real_signal}`);
+    return `<div class="board"><b>${x.label}</b><br>${x.connected ? (x.node_id ? 'nod ' + x.node_id : 'väntar på nodnummer…') : '<span class="bad">ej ansluten</span>'}<br>${st}</div>`;
+  }).join('') : '<span class="none">Inga kort anslutna. Alla noder är virtuella. Starta med <code>--port COM3</code> för att koppla ett kort.</span>';
+  const tray = document.getElementById('tray'), gone = state.nodes.filter(n => n.removed);
+  const trayHtml = gone.length ? gone.map(n => `<span class="chip loose" data-id="${n.id}" title="Dubbelklicka eller dra till gropen på kartan">nod ${n.id}</span>`).join('')
+    : '<span class="none">Inga. Dra en nod bort från kartan för att ta bort den.</span>';
+  if (tray.dataset.h !== trayHtml) { tray.innerHTML = trayHtml; tray.dataset.h = trayHtml; }   // rita bara om när något ändrats, annars tappas noden mitt i draget
+  document.getElementById('log').innerHTML = state.events.map(e => `<div class="${e.kind}"><span class="t">${e.t}</span>${e.text}</div>`).join('');
+  draw(); kick();
+}
+
+function setConn(ok) {
+  document.getElementById('dot').className = 'dot ' + (ok ? 'on' : 'off');
+  document.getElementById('connText').textContent = ok ? 'ansluten till simulatorn' : 'tappade kontakten, försöker igen…';
+}
+
+const es = new EventSource('/api/stream');
+es.onmessage = e => { const first = !state; state = JSON.parse(e.data); setConn(true); if (first && view3d) applyView(); render(); };
+es.onerror = () => setConn(false);
+
+function nodeAt(ev) {
+  const r = cv.getBoundingClientRect(), s = cv.width / r.width;
+  const x = (ev.clientX - r.left) * s, y = (ev.clientY - r.top) * s;
+  let best = null, bd = 40;
+  if (state) for (const n of state.nodes) { const q = pt(n), d = Math.hypot(q[0] - x, q[1] - y); if (d < bd) { bd = d; best = n; } }
+  return best;
+}
+
+function toCanvas(ev) {
+  const r = cv.getBoundingClientRect(), k = cv.width / r.width;
+  return [(ev.clientX - r.left) * k, (ev.clientY - r.top) * k];
+}
+const post = (u, id) => fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+
+function showTip(ev, n) {
+  if (!n || (drag && drag.moved)) { tip.style.display = 'none'; return; }
+  let route = '';
+  if (n.removed) route = '<b>saknas</b>, platsen är ledig';
+  else if (n.mode === 'X') route = '<b>larmar</b>';
+  else if (n.mode === 'OFF') route = 'inga larm';
+  else if (n.mode === 'NONE') route = '<b>ingen väg ut</b>';
+  else route = `lampa ${n.mode === 'LEFT' ? 'grön (LEFT)' : 'gul (RIGHT)'}<br>väg: ${n.path.join(' → ')}<br>ca ${n.meters.toFixed(1)} m`;
+  tip.innerHTML = `<b>Nod ${n.id}</b> ${n.name}<br>plan ${n.floor}<br>${route}${n.real ? '<br>riktigt kort' : ''}`;
+  const w = document.getElementById('wrap').getBoundingClientRect();
+  tip.style.left = Math.min(ev.clientX - w.left + 14, w.width - 290) + 'px';
+  tip.style.top = (ev.clientY - w.top + 14) + 'px';
+  tip.style.display = 'block';
+}
+
+let lastTap = { id: null, t: 0 };
+function tapRestore(id) {                      // två tryck på samma nod inom 0,5 s sätter tillbaka den
+  const now = performance.now(), dbl = lastTap.id === id && now - lastTap.t < 500;
+  lastTap = dbl ? { id: null, t: 0 } : { id, t: now };
+  if (dbl) post('/api/restore', id);
+  return dbl;
+}
+cv.addEventListener('pointerdown', ev => {
+  const n = nodeAt(ev);
+  if (n && n.removed) { tapRestore(n.id); return; }
+  if (!n) return;
+  const [x, y] = toCanvas(ev);
+  drag = { id: n.id, x, y, sx: ev.clientX, sy: ev.clientY, moved: false, from: 'map' };
+  cv.setPointerCapture(ev.pointerId);
+});
+cv.addEventListener('pointermove', ev => {
+  if (drag && drag.from === 'map') {
+    [drag.x, drag.y] = toCanvas(ev);
+    if (!drag.moved && Math.hypot(ev.clientX - drag.sx, ev.clientY - drag.sy) > 6) { drag.moved = true; hover = null; }
+    cv.style.cursor = drag.moved ? 'grabbing' : '';
+    draw(); return;
+  }
+  const n = nodeAt(ev);
+  if (n !== hover) { hover = n && !n.removed ? n : null; draw(); kick(); }
+  cv.style.cursor = n && !n.removed ? 'grab' : '';
+  showTip(ev, n);
+});
+cv.addEventListener('pointerup', ev => {
+  if (!drag || drag.from !== 'map') return;
+  const d = drag; drag = null; cv.style.cursor = '';
+  const n = state && state.nodes.find(q => q.id === d.id);
+  if (!d.moved) { post('/api/click', d.id); return; }
+  if (n && Math.hypot(pt(n)[0] - d.x, pt(n)[1] - d.y) > 45) post('/api/remove', d.id);   // bort från sin plats
+  draw();
+});
+cv.addEventListener('pointercancel', () => { drag = null; draw(); });
+cv.addEventListener('mouseleave', () => { if (!drag) { hover = null; tip.style.display = 'none'; draw(); } });
+
+// lösa noder: dra tillbaka till gropen
+const ghost = document.createElement('div'); ghost.className = 'ghost'; document.body.appendChild(ghost);
+document.getElementById('tray').addEventListener('pointerdown', ev => {
+  const c = ev.target.closest('.loose'); if (!c) return;
+  drag = { id: +c.dataset.id, moved: true, from: 'tray', cx: ev.clientX, cy: ev.clientY };
+  ghost.textContent = 'nod ' + drag.id; ghost.style.display = 'block';
+  ghost.style.left = ev.clientX + 'px'; ghost.style.top = ev.clientY + 'px';
+  c.setPointerCapture(ev.pointerId); ev.preventDefault();
+});
+document.getElementById('tray').addEventListener('pointermove', ev => {
+  if (!drag || drag.from !== 'tray') return;
+  ghost.style.left = ev.clientX + 'px'; ghost.style.top = ev.clientY + 'px';
+  const n = state.nodes.find(q => q.id === drag.id), [x, y] = toCanvas(ev);
+  ghost.classList.toggle('ok', Math.hypot(pt(n)[0] - x, pt(n)[1] - y) < 55);
+});
+document.getElementById('tray').addEventListener('pointerup', ev => {
+  if (!drag || drag.from !== 'tray') return;
+  const n = state.nodes.find(q => q.id === drag.id), [x, y] = toCanvas(ev);
+  if (Math.hypot(ev.clientX - drag.cx, ev.clientY - drag.cy) < 6) {            // ett tryck utan drag: räknas för dubbelklick
+    const id = drag.id; drag = null; ghost.style.display = 'none'; ghost.classList.remove('ok'); tapRestore(id); return;
+  }
+  if (Math.hypot(pt(n)[0] - x, pt(n)[1] - y) < 55) post('/api/restore', drag.id);       // släppt på sin grop
+  drag = null; ghost.style.display = 'none'; ghost.classList.remove('ok');
+});
+document.getElementById('v3').onclick = () => { view3d = !view3d; try { localStorage.setItem('view3d', view3d ? '1' : '0'); } catch (e) {} applyView(); kick(); };
+document.getElementById('tilt').value = Math.round(tilt * 100);
+document.getElementById('tilt').oninput = e => { tilt = e.target.value / 100; try { localStorage.setItem('tilt3d', tilt); } catch (x) {} if (view3d) applyView(); };
+document.getElementById('restoreAll').onclick = () => state && state.nodes.filter(n => n.removed).forEach(n => post('/api/restore', n.id));
+document.getElementById('clear').onclick = () => fetch('/api/clear', { method: 'POST' });
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+.pio/
+.vscode/
+.env
+include/topology.h
+include/secrets.h
+__pycache__/
