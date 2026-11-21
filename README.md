@@ -61,8 +61,8 @@ You only need **Python 3** and a web browser.
 1. Clone the repository and open a terminal in the project folder:
 
    ```bash
-   git clone <YOUR_REPOSITORY_URL>
-   cd <YOUR_PROJECT_DIRECTORY>
+   git clone https://github.com/AnasDiasso/resq-plan.git
+   cd resq-plan
    ```
 
 2. Start the simulator:
