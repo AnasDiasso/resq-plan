@@ -9,21 +9,24 @@
    "y": 248,
    "exit_m": 12.0,
    "exit_lamp": "LEFT",
-   "exit_dir": "up"
+   "exit_dir": "up",
+    "zone": "STAIR_LEFT"
   },
   {
    "id": 2,
    "name": "Trapphus vä plan 2",
    "floor": 2,
    "x": 375,
-   "y": 495
+   "y": 495,
+    "zone": "STAIR_LEFT"
   },
   {
    "id": 3,
    "name": "Trapphus vä plan 3",
    "floor": 3,
    "x": 368,
-   "y": 795
+   "y": 795,
+    "zone": "STAIR_LEFT"
   },
   {
    "id": 4,
@@ -33,21 +36,24 @@
    "y": 232,
    "exit_m": 12.0,
    "exit_lamp": "LEFT",
-   "exit_dir": "up"
+   "exit_dir": "up",
+   "zone": "STAIR_RIGHT"
   },
   {
    "id": 5,
    "name": "Trapphus hö plan 2",
    "floor": 2,
    "x": 1082,
-   "y": 505
+   "y": 505,
+   "zone": "STAIR_RIGHT"
   },
   {
    "id": 6,
    "name": "Trapphus hö plan 3",
    "floor": 3,
    "x": 1065,
-   "y": 790
+   "y": 790,
+   "zone": "STAIR_RIGHT"
   },
   {
    "id": 7,
