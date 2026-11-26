@@ -20,23 +20,11 @@ RouteResult computeRoute(uint8_t selfIdx, uint32_t alarmMask) {
 
     if (selfIdx >= TOPO_N) return r;
 
-    // Endast larm i nod 1–6 får blockera en passage.
-    uint32_t stairAlarmMask = 0;
-
-    for (int k = 0; k < TOPO_N; k++) {
-        uint8_t id = TOPO_ID[k];
-
-        if (id >= 1 && id <= 6 &&
-            (alarmMask & (1UL << k))) {
-            stairAlarmMask |= (1UL << k);
-        }
-    }
-
-    // Blockera hela trapphuset om någon nod i zonen larmar.
+    // Blockera larmande noder, och hela zonen (t.ex. trapphuset) om noden har en zon.
     uint32_t blockedMask = 0;
 
     for (int k = 0; k < TOPO_N; k++) {
-        if (stairAlarmMask & (1UL << k)) {
+        if (alarmMask & (1UL << k)) {
             blockedMask |= TOPO_ZONE_MASK[k];
         }
     }

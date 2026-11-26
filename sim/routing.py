@@ -30,7 +30,7 @@ class Topology:
 
 def compute(topo, alarms):
     """Returnerar {nod-id: dict(mode, next, dm)}.
-    mode: 'X' (larmar), 'LEFT', 'RIGHT', 'NONE' (ingen väg ut), 'OFF' (inga larm).
+    mode: 'X' (larmar eller ligger i en zon som larmar), 'LEFT', 'RIGHT', 'NONE' (ingen väg ut), 'OFF' (inga larm).
     next: nästa nod-id, 'UT' (ut här) eller None."""
     alarms = set(alarms)
     if not alarms:
@@ -53,7 +53,7 @@ def compute(topo, alarms):
 
     out = {}
     for i in topo.order:
-        if i in alarms:
+        if i in closed:                              # larmar själv, eller samma zon som ett larm
             out[i] = {"mode": "X", "next": None, "dm": 0}
             continue
         best_total, best_next, best_lamp = INF, None, None
