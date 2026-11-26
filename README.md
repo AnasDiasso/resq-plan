@@ -578,3 +578,5 @@ Demonstrate a distributed evacuation guidance system in which every node can ind
 ## Author
 
 Anas Diasso – [GitHub profile](https://github.com/AnasDiasso)
+
+Kelly Li – [GitHub profile](https://github.com/kellywy)
