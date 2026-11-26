@@ -10,7 +10,7 @@ int topoIndexOfId(uint8_t nodeId) {
     return -1;
 }
 
-RouteResult computeRoute(uint8_t selfIdx, uint32_t blockedMask) {
+RouteResult computeRoute(uint8_t selfIdx, uint32_t alarmMask) {
     RouteResult r;
     r.hasRoute = false;
     r.isBlocked = false;
@@ -20,11 +20,34 @@ RouteResult computeRoute(uint8_t selfIdx, uint32_t blockedMask) {
 
     if (selfIdx >= TOPO_N) return r;
 
-    if (blockedMask & (1UL << selfIdx)) {      // jag larmar själv: X-lampan
+    // Endast larm i nod 1–6 får blockera en passage.
+    uint32_t stairAlarmMask = 0;
+
+    for (int k = 0; k < TOPO_N; k++) {
+        uint8_t id = TOPO_ID[k];
+
+        if (id >= 1 && id <= 6 &&
+            (alarmMask & (1UL << k))) {
+            stairAlarmMask |= (1UL << k);
+        }
+    }
+
+    // Blockera hela trapphuset om någon nod i zonen larmar.
+    uint32_t blockedMask = 0;
+
+    for (int k = 0; k < TOPO_N; k++) {
+        if (stairAlarmMask & (1UL << k)) {
+            blockedMask |= TOPO_ZONE_MASK[k];
+        }
+    }
+
+    // Kontrollera om den egna noden tillhör ett blockerat trapphus.
+    if (blockedMask & (1UL << selfIdx)) {
         r.isBlocked = true;
         r.signal = LedSignal::CROSS;
         return r;
     }
+
 
     // Larm stänger hela sin zon (t.ex. ett trapphus): inga pilar leder dit, och utgångar där räknas inte.
     uint32_t zoneBlocked = 0;
