@@ -80,9 +80,10 @@
     </div>
     <div class="card legend">
       <h2>Teckenförklaring</h2>
-      <div><span class="sw" style="background:var(--red)"></span> rött kryss lyser: noden larmar (grått = släckt)</div>
-      <div><span class="sw" style="background:var(--green)"></span> grön triangel (LEFT, den vänstra)</div>
-      <div><span class="sw" style="background:var(--yellow)"></span> gul triangel (RIGHT, den högra)</div>
+      <div><span class="sw" style="background:var(--red)"></span> rött kryss: noden larmar (eller ligger i samma trapphus som ett larm)</div>
+      <div><span class="sw" style="background:var(--green)"></span> grön triangel: vägen ut går åt LEFT-pilen</div>
+      <div><span class="sw" style="background:var(--yellow)"></span> gul triangel: vägen ut går åt RIGHT-pilen</div>
+      <div><span class="sw" style="background:var(--blue)"></span> bara blå prick: inga larm, lamporna är släckta</div>
       <div><span class="sw" style="background:#8b8f97"></span> grop: noden är bortdragen, platsen är ledig</div>
       <div><span class="sw" style="background:var(--blue)"></span> blå ring: nod med riktigt kort</div>
       <div><span class="sw" style="background:var(--warn)"></span> röd ring: kortet visar något annat än simuleringen</div>
@@ -117,21 +118,19 @@ function drawLamps(n, flat) {                       // returnerar true om noden 
   const L = lamps && lamps.nodes && lamps.nodes[n.id];
   if (!L) return false;
   const lit = { LEFT: L.lamp_map.LEFT, RIGHT: L.lamp_map.RIGHT };
-  L.triangles.forEach((t, i) => {
-    let fill = '#b9bcc2';                     // neutral grå = släckt
-    if (n.mode === 'LEFT' && lit.LEFT === i) fill = C.green;
-    if (n.mode === 'RIGHT' && lit.RIGHT === i) fill = C.yellow;
-    tri(t.poly, fill, fill === '#b9bcc2' ? '#8a8e96' : '#222');
+  L.triangles.forEach((t, i) => {             // bara den tända pilen ritas; släckta pilar syns inte
+    if (n.mode === 'LEFT' && lit.LEFT === i) tri(t.poly, C.green, '#222');
+    if (n.mode === 'RIGHT' && lit.RIGHT === i) tri(t.poly, C.yellow, '#222');
   });
-  if (L.cross) {
-    const c = L.cross, on = n.mode === 'X';
-    const pulse = on && !REDUCED ? 0.5 + 0.5 * Math.sin(performance.now() / 180) : 1;
-    const r = c.size / 2 + 4 + (on ? 6 * pulse - 3 : 0);
-    if (on) { ctx.save(); ctx.shadowColor = 'rgba(215,0,0,0.9)'; ctx.shadowBlur = 8 + 22 * pulse; }
-    ctx.strokeStyle = on ? `rgba(215,0,0,${0.55 + 0.45 * pulse})` : '#8a8e96'; ctx.lineWidth = on ? 8 + 4 * pulse : 4; ctx.lineCap = 'round';
+  if (L.cross && n.mode === 'X') {            // krysset ritas bara när noden larmar
+    const c = L.cross;
+    const pulse = !REDUCED ? 0.5 + 0.5 * Math.sin(performance.now() / 180) : 1;
+    const r = c.size / 2 + 4 + 6 * pulse - 3;
+    ctx.save(); ctx.shadowColor = 'rgba(215,0,0,0.9)'; ctx.shadowBlur = 8 + 22 * pulse;
+    ctx.strokeStyle = `rgba(215,0,0,${0.55 + 0.45 * pulse})`; ctx.lineWidth = 8 + 4 * pulse; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(c.x - r, c.y - r); ctx.lineTo(c.x + r, c.y + r);
     ctx.moveTo(c.x - r, c.y + r); ctx.lineTo(c.x + r, c.y - r); ctx.stroke();
-    if (on) ctx.restore();
+    ctx.restore();
   }
   if (n.mode === 'NONE' && !flat) { ctx.fillStyle = C.red; ctx.font = 'bold 34px system-ui'; ctx.fillText('?', n.x - 10, n.y - 18); }
   return true;
