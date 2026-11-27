@@ -28,12 +28,15 @@ The project also includes an interactive Python simulator with 2D and 3D buildin
 - Simulation of unavailable or disconnected nodes.
 - Serial communication with physical ESP32 boards.
 - Automated firmware, network, and simulator tests.
+- Optional presence detection with a 24 GHz mmWave radar sensor.
+- Bidirectional people counter with two laser beams (in development).
 
 ## Table of Contents
 
 - [Quick Start](#quick-start)
 - [Windows](#windows)
 - [Hardware](#hardware)
+- [Sensors](#sensors)
 - [System Architecture](#system-architecture)
 - [Communication Protocol](#communication-protocol)
 - [Evacuation Routing](#evacuation-routing)
@@ -227,6 +230,7 @@ Each node consists of:
 - One yellow LED for RIGHT direction.
 - Three current-limiting resistors (220–330 Ω).
 - Optional: HMMD 24 GHz mmWave radar sensor for presence detection.
+- Optional: two laser beams (laser + receiver each) for the people counter.
 
 ### Wiring
 
@@ -240,6 +244,8 @@ Each node consists of:
 | mmWave sensor RX  | GPIO17     | Sensor RX to ESP32 TX (UART2)  |
 | mmWave sensor 3V3 | 3V3        | Power                          |
 | mmWave sensor GND | GND        | Ground                         |
+| Laser beam 1      | TODO       | Not connected in the firmware yet |
+| Laser beam 2      | TODO       | Not connected in the firmware yet |
 
 Each LED is wired GPIO → resistor → LED long leg → LED short leg → GND. The button uses the internal pull-up resistor:
 
@@ -253,10 +259,68 @@ The pins are defined in [src/led_guidance.cpp](src/led_guidance.cpp) and [src/no
 
 | Indicator    | Meaning                                  |
 | ------------ | ---------------------------------------- |
-| Red X        | This node has triggered an alarm         |
+| Red X        | This node, or another node in the same stairwell, has an alarm |
 | Green LEFT   | Evacuation direction is left             |
 | Yellow RIGHT | Evacuation direction is right            |
 | All LEDs off | No available route or no active indication |
+
+## Sensors
+
+Both sensors are optional and work independently of the alarm and routing system.
+
+### mmWave Presence Detection
+
+An HMMD 24 GHz mmWave radar detects whether someone is moving near the node. The code is in [src/mmwave_presence.cpp](src/mmwave_presence.cpp), and the wiring is in [Wiring](#wiring).
+
+How it works:
+
+- The sensor reports signal energy in 16 zones of 70 cm each, up to 11.2 m. The first zone (0–70 cm) is always noisy and is skipped.
+- For the first 3 seconds after start, the node learns the normal noise level in each zone. Keep the area in front of the sensor empty during this time if possible.
+- Movement is detected when the energy in a zone rises clearly above its normal level.
+- Presence is held for 5 seconds after the last movement.
+- The normal level keeps adapting over time, so a permanent change in the background (for example a fan) stops counting as presence after a few minutes.
+
+The node prints the status to the serial monitor whenever it changes:
+
+```text
+HMMD mmWave startad
+Räknar rörelse upp till 1120 cm
+NARVARO
+INGEN NARVARO
+```
+
+Sensitivity and range are set at the top of `mmwave_presence.cpp` (`SENSITIVITY_FACTOR`, `SENSITIVITY_MARGIN`, `MAX_DISTANCE_CM`, `HOLD_MS`).
+
+The presence status is not yet used by the alarm or the LEDs.
+
+### People Counter
+
+> **In development.** The counting logic is implemented, but it is not yet connected to any pins or called from `main.cpp`.
+
+Two laser beams across a doorway count how many people go in and out. The code is in [src/people_counter.cpp](src/people_counter.cpp).
+
+Mount beam 1 on the outside and beam 2 on the inside of the doorway, a short distance apart, so that a person blocks them one after the other.
+
+| Order the beams are blocked | Counted as |
+| --------------------------- | ---------- |
+| Beam 1, then beam 2         | One person in  |
+| Beam 2, then beam 1         | One person out |
+
+- A crossing must be finished within 3 seconds, otherwise it is discarded.
+- A person who blocks one beam and turns back is not counted.
+- Unclear patterns, such as both beams blocked at the same moment from idle, are discarded and the counter waits until both beams are clear.
+- The current occupancy never goes below zero.
+
+Usage:
+
+```cpp
+PeopleCounter counter;                    // optional timeout in ms, default 3000
+counter.update(beam1Blocked, beam2Blocked, millis());   // call often, e.g. in loop()
+counter.getTotalEntered();
+counter.getTotalExited();
+counter.getCurrentOccupancy();
+counter.reset();
+```
 
 ## System Architecture
 
@@ -303,7 +367,7 @@ Nodes currently in an alarm state are excluded from route calculations. If a nod
 
 ### Routing Rules
 
-1. The node that triggers an alarm displays a red X.
+1. The node that triggers an alarm displays a red X. If it is in a stairwell, every node in that stairwell displays a red X.
 2. All other nodes calculate the fastest available route to an exit.
 3. The appropriate directional arrow is illuminated.
 4. If no valid route exists, all indicators remain off.
@@ -382,7 +446,9 @@ resq-plan/
 │   ├── led_guidance.*      # LED output
 │   ├── protocol.*          # Packet format, HMAC, replay protection
 │   ├── radio.h, radio_espnow.*
-│   └── crypto_esp.cpp
+│   ├── crypto_esp.cpp
+│   ├── mmwave_presence.*   # mmWave presence detection
+│   └── people_counter.*    # Laser-beam people counter
 │
 ├── include/                # Generated at build time (secrets.h, topology.h)
 │
@@ -748,3 +814,7 @@ Demonstrate a distributed evacuation guidance system in which every node can ind
 Anas Diasso – [GitHub profile](https://github.com/AnasDiasso)
 
 Kelly Li – [GitHub profile](https://github.com/kellywy)
+
+MartinVasilevski – [GitHub profile](https://github.com/MartinVasilevski)
+
+Sally Shir Ali – [GitHub profile](https://github.com/Sally-zsa)
