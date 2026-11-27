@@ -114,7 +114,8 @@ int main() {
         w.run(200);
         expectAll(w, maskOf({2}), "larm nod 2");
         CHECK(w.nodes[w.idxOf(2)]->signal() == LedSignal::CROSS, "nod 2 ska visa X");
-        CHECK(w.nodes[w.idxOf(3)]->signal() == LedSignal::LEFT, "nod 3 ska peka mot nod 7 (grön)");
+        CHECK(w.nodes[w.idxOf(1)]->signal() == LedSignal::CROSS, "nod 1 ska visa X (samma trapphus som nod 2)");
+        CHECK(w.nodes[w.idxOf(3)]->signal() == LedSignal::CROSS, "nod 3 ska visa X (samma trapphus som nod 2)");
         CHECK(w.nodes[w.idxOf(4)]->signal() == LedSignal::LEFT, "nod 4 (utgång) ska visa ut (grön)");
 
         w.press(9);                       // ett andra larm
@@ -209,10 +210,10 @@ int main() {
         CHECK(pins(0, 0, 0), "start: lamporna ska vara släckta");
         type("n10\n"); type("a9\n");            CHECK(pins(0, 1, 0), "n10, a9 -> vänster (grön)");
         type("c");                              CHECK(pins(0, 0, 0), "c rensar");
-        type("n3\n"); type("a2\n");             CHECK(pins(0, 1, 0), "n3, a2 -> mot nod 7 (grön)");
+        type("n3\n"); type("a2\n");             CHECK(pins(1, 0, 0), "n3, a2 -> X (samma trapphus)");
         type("c"); type("n7\n"); type("a2\n");  CHECK(pins(0, 1, 0), "n7, a2 -> vänster (grön, mot nod 8)");
         type("c"); type("n9\n"); type("a9\n");  CHECK(pins(1, 0, 0), "n9, a9 -> X");
-        type("c"); type("n3\n"); type("a2\n"); type("a7\n"); CHECK(pins(0, 0, 0), "n3, larm 2 och 7 -> ingen väg");
+        type("c"); type("n7\n"); type("a2\n"); type("a8\n"); CHECK(pins(0, 0, 0), "n7, larm 2 och 8 -> ingen väg");
         type("c"); type("n10"); g_ms += 900; type("", 0); type("a9"); g_ms += 900; type("", 0);
         CHECK(pins(0, 1, 0), "tal utan Enter räknas efter tidsgräns");
         type("c"); type("a99\n");               CHECK(pins(0, 0, 0), "okänt id ignoreras");

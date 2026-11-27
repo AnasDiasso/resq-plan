@@ -75,7 +75,7 @@ The new branch name now shows in the bottom-left corner. You are on your own bra
 Edit and save your files (`Ctrl+S`), then test them. For example, run the simulator:
 
 ```bash
-python simulator/server.py
+python3 sim/server.py
 ```
 
 Then open **Source Control** (`Ctrl+Shift+G`), stage your files with **+**, write a message that starts with the ticket number, and click **Commit**:

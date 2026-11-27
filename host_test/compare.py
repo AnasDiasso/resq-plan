@@ -23,9 +23,10 @@ def closed(alarms):
     return c
 
 def ref(src, alarms):
-    """Kortaste väg från src till utsidan. Returnerar meter*10, None (ingen väg) eller 'X' (larmar själv)."""
-    if src in alarms: return "X"
-    return dist_from(src, closed(alarms))
+    """Kortaste väg från src till utsidan. Returnerar meter*10, None (ingen väg) eller 'X' (larmar själv eller i larmande zon)."""
+    cl = closed(alarms)
+    if src in cl: return "X"
+    return dist_from(src, cl)
 
 def dist_from(src, blocked):
     """Framåt-Dijkstra från src; noder i 'blocked' får inte beträdas (src själv får starta) och utgångar där räknas inte."""

@@ -4,7 +4,7 @@
 #include "route.h"
 #include "topology.h"
 
-// Knapp: GPIO4 -> knapp -> GND (intern pull-up, trycket ger LOW)
+// Knapp: GPIO4 -> knapp -> GND (intern pull-up, trycket ger LOW) 
 static const uint8_t PIN_BUTTON = 4;
 static const uint32_t DEBOUNCE_MS = 40;
 static const uint32_t CAPTURE_TIMEOUT_MS = 800;       // tid efter sista siffran innan numret räknas
