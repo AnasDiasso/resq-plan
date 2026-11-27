@@ -1,4 +1,4 @@
-// Datortest av hela larmkedjan: 16 noder med samma NodeController, route.cpp och protocol.cpp som kortet,
+// Datortest av hela larmkedjan: 18 noder med samma NodeController, route.cpp och protocol.cpp som kortet,
 // ihopkopplade med en låtsasradio (broadcast, förlust, uppspelning, fel nyckel).
 #include <cstdio>
 #include <cstdlib>

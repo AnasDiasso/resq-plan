@@ -1,5 +1,5 @@
 #!/bin/sh
-# Bygger och kör datortesterna: protokoll mot Python, hela larmkedjan med 16 noder.
+# Bygger och kör datortesterna: protokoll mot Python, hela larmkedjan med alla 18 noder i topology.json.
 set -e
 cd "$(dirname "$0")/.."
 python3 scripts/gen_topology.py >/dev/null

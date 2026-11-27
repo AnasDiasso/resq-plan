@@ -24,3 +24,7 @@ trianglarna pekar åt grannen (t.ex. vid trapphusen). Rita om pilen i bilden ell
 | 14 | Korridor/rum plan 3 – rum söder 1 (B8) | höger | - | vänster | 80° | **osäker** |
 | 15 | Korridor/rum plan 3 – rum söder 2 (B9) | höger | 83° | vänster | - | **osäker** |
 | 16 | Korridor/rum plan 3 – rum söder 3 (B10) | höger | 71° | vänster | - | **osäker** |
+| 17 | Korridor/rum plan 3 – rum söder 2, andra sidan dörren (B9b) | höger | - | vänster | - | satt för hand (kopia av 15) |
+| 18 | Korridor/rum plan 3 – rum söder 3, andra sidan dörren (B10b) | höger | - | vänster | - | satt för hand (kopia av 16) |
+
+Nod 15–18 är satta för hand (15 och 16 flyttade, 17 och 18 nya). `tools/extract_lamps.py` skriver över dem.

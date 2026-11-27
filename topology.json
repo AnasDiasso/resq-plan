@@ -10,7 +10,7 @@
    "exit_m": 12.0,
    "exit_lamp": "LEFT",
    "exit_dir": "up",
-    "zone": "STAIR_LEFT"
+   "zone": "STAIR_LEFT"
   },
   {
    "id": 2,
@@ -18,7 +18,7 @@
    "floor": 2,
    "x": 375,
    "y": 495,
-    "zone": "STAIR_LEFT"
+   "zone": "STAIR_LEFT"
   },
   {
    "id": 3,
@@ -26,7 +26,7 @@
    "floor": 3,
    "x": 368,
    "y": 795,
-    "zone": "STAIR_LEFT"
+   "zone": "STAIR_LEFT"
   },
   {
    "id": 4,
@@ -115,14 +115,28 @@
    "id": 15,
    "name": "Korridor/rum plan 3 – rum söder 2 (B9)",
    "floor": 3,
-   "x": 705,
+   "x": 678,
    "y": 1240
   },
   {
    "id": 16,
    "name": "Korridor/rum plan 3 – rum söder 3 (B10)",
    "floor": 3,
-   "x": 915,
+   "x": 888,
+   "y": 1240
+  },
+  {
+   "id": 17,
+   "name": "Korridor/rum plan 3 – rum söder 2, andra sidan dörren (B9b)",
+   "floor": 3,
+   "x": 730,
+   "y": 1240
+  },
+  {
+   "id": 18,
+   "name": "Korridor/rum plan 3 – rum söder 3, andra sidan dörren (B10b)",
+   "floor": 3,
+   "x": 940,
    "y": 1240
   }
  ],
@@ -255,15 +269,39 @@
   },
   {
    "from": 15,
-   "to": 11,
-   "m": 11.1,
+   "to": 17,
+   "m": 2.6,
+   "lamp": "RIGHT"
+  },
+  {
+   "from": 17,
+   "to": 15,
+   "m": 2.6,
    "lamp": "LEFT"
   },
   {
+   "from": 17,
+   "to": 11,
+   "m": 11.0,
+   "lamp": "RIGHT"
+  },
+  {
    "from": 16,
-   "to": 12,
-   "m": 10.9,
+   "to": 18,
+   "m": 2.6,
+   "lamp": "RIGHT"
+  },
+  {
+   "from": 18,
+   "to": 16,
+   "m": 2.6,
    "lamp": "LEFT"
+  },
+  {
+   "from": 18,
+   "to": 12,
+   "m": 10.5,
+   "lamp": "RIGHT"
   }
  ]
 }

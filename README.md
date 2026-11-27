@@ -2,7 +2,7 @@
 
 A distributed wireless evacuation guidance system built using ESP32-WROOM-32, ESP-NOW, and Python.
 
-The system consists of ESP32 nodes (16 in the current building map) that communicate directly without requiring a Wi-Fi router, internet connection, or central controller.
+The system consists of ESP32 nodes (18 in the current building map) that communicate directly without requiring a Wi-Fi router, internet connection, or central controller.
 
 Each node can independently detect alarms, communicate with other nodes, and calculate the fastest available evacuation route to the nearest exit using Dijkstra's algorithm.
 
@@ -13,7 +13,7 @@ The project also includes an interactive Python simulator with 2D and 3D buildin
 
 ## Features
 
-- 16 nodes in the current topology. The firmware accepts up to 32.
+- 18 nodes in the current topology. The firmware accepts up to 32.
 - Wireless communication using ESP-NOW broadcast.
 - No Wi-Fi router or internet connection required.
 - HMAC-SHA256 message authentication.
@@ -376,7 +376,7 @@ Distances are based on the building topology rather than straight-line measureme
 
 ## Building Topology
 
-The building layout is defined in [topology.json](topology.json). It contains 16 nodes. Distances are estimated from the map image and given in meters. The firmware converts them to decimeters.
+The building layout is defined in [topology.json](topology.json). It contains 18 nodes. Distances are estimated from the map image and given in meters. The firmware converts them to decimeters.
 
 `topology.json` is the source. The build turns it into `include/topology.h`, so edit the JSON, never the header. After a change, every board must be flashed again.
 
@@ -405,6 +405,8 @@ The stairwell connections are:
 6 ↔ 13
 ```
 
+The two southern rooms on floor 3 each have a door with a node on either side: 15 ↔ 17 (door at x ≈ 704) and 16 ↔ 18 (door at x ≈ 914). People in those rooms go through the door to 17 or 18 and on to the corridor at 11 or 12, instead of straight through the wall.
+
 ### Directional Lamp Extraction
 
 Lamp positions are extracted from orange triangles in the original building map ([docs/karta.png](docs/karta.png)). This tool needs extra packages that the simulator does not:
@@ -415,6 +417,9 @@ python3 tools/extract_lamps.py
 ```
 
 It writes `sim/lamps.json`, updates the `lamp` fields in `topology.json`, and regenerates `docs/lampor_per_nod.md`.
+
+> [!WARNING]
+> Nodes 15–18 are set by hand: 15 and 16 were moved, and 17 and 18 have no triangles in `docs/karta.png`. Running `tools/extract_lamps.py` overwrites their entries in `sim/lamps.json` and their `lamp` fields in `topology.json`. Back up both files first, or restore nodes 15–18 by hand afterwards.
 
 The extraction rules are:
 
@@ -519,7 +524,7 @@ ESPNOW_CHANNEL=1
 GROUP_KEY=0123456789abcdef0123456789abcdef
 ```
 
-- `NODE_ID` must exist in `topology.json` (1–16) and be unique for each board.
+- `NODE_ID` must exist in `topology.json` (1–18) and be unique for each board.
 - `ESPNOW_CHANNEL` is 1–13 and must be the same on all boards.
 - `GROUP_KEY` is 32 hex characters and must be the same on all boards. Never use the example above.
 
@@ -707,7 +712,7 @@ The project includes automated tests for the firmware, communication protocol, r
 
 | Test | Command | What it checks |
 | ---- | ------- | -------------- |
-| Protocol and network | `sh host_test/run_sim.sh` | C++ HMAC matches Python, and a simulated 16-node network handles packet loss, wrong keys, replay attempts, alarm propagation, cancellation and route recalculation. |
+| Protocol and network | `sh host_test/run_sim.sh` | C++ HMAC matches Python, and a simulated 18-node network handles packet loss, wrong keys, replay attempts, alarm propagation, cancellation and route recalculation. |
 | Routing reference | `python3 host_test/compare.py` | C++ routing matches an independent Python Dijkstra for all single alarms, all pairs and random groups. |
 | Simulator | `python3 sim/test_sim.py` | Simulator routing matches the firmware, and the full chain server ↔ node works over the serial protocol. |
 | Serial | `python3 sim/test_serial.py` | The `pyserial` connection, using a virtual serial port instead of a real board. |
