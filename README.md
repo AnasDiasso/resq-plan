@@ -226,6 +226,7 @@ Each node consists of:
 - One green LED for LEFT direction.
 - One yellow LED for RIGHT direction.
 - Three current-limiting resistors (220–330 Ω).
+- Optional: HMMD 24 GHz mmWave radar sensor for presence detection.
 
 ### Wiring
 
@@ -235,6 +236,10 @@ Each node consists of:
 | Red X             | GPIO2      | LED through 220–330 Ω resistor |
 | Green LEFT arrow  | GPIO23     | LED through 220–330 Ω resistor |
 | Yellow RIGHT arrow| GPIO22     | LED through 220–330 Ω resistor |
+| mmWave sensor TX  | GPIO16     | Sensor TX to ESP32 RX (UART2)  |
+| mmWave sensor RX  | GPIO17     | Sensor RX to ESP32 TX (UART2)  |
+| mmWave sensor 3V3 | 3V3        | Power                          |
+| mmWave sensor GND | GND        | Ground                         |
 
 Each LED is wired GPIO → resistor → LED long leg → LED short leg → GND. The button uses the internal pull-up resistor:
 

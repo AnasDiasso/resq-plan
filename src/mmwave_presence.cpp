@@ -7,7 +7,15 @@
 static const unsigned long HOLD_MS = 5000; // NÄRVARO hålls kvar 5 s efter senaste rörelse
 
 // ---- Räckvidd: rörelse längre bort än så ignoreras ----
-static const int MAX_DISTANCE_CM = 10000;
+// Sensorn har 16 zoner à 70 cm, så det går inte att räkna längre än 1120 cm.
+static const int MAX_DISTANCE_CM = 1120;
+
+// ---- Inlärning av det normala bruset ----
+static const int WARMUP_FRAMES = 30;      // ca 3 s efter start: lär in bruset, rapportera ingen rörelse
+static const float LEARN_IDLE = 0.002;    // ingen rörelse: följ bruset (ca 50 s)
+static const float LEARN_MOVING = 0.0002; // rörelse: följ mycket långsamt (ca 8 min), så att en
+                                          // varaktigt högre bakgrund (fläkt, element) inte ger
+                                          // NÄRVARO för alltid
 
 // ---- Känslighet: hur mycket över det normala bruset som räknas som rörelse ----
 static const float SENSITIVITY_FACTOR = 1.3; // högre = mindre känslig
@@ -18,7 +26,7 @@ static HardwareSerial Radar(2);
 static int minZone, maxZone; // räknas ut från MAX_DISTANCE_CM (0,7 m per zon)
 static float normal[16];     // normal nivå (brus) per zon – lärs in automatiskt
 static float level[16];      // nuvarande nivå per zon (utjämnad)
-static bool started = false;
+static int warmup = 0;       // antal mätningar under inlärningen vid start
 static unsigned long lastSeen = 0, lastData = 0;
 static int previousPresence = -1;
 
@@ -109,25 +117,33 @@ void mmwave_update()
   int energy[16];
   if (readRadar(energy))
   {
-    bool moving = false;
-    for (int z = minZone; z <= maxZone; z++)
-    { // bara zonerna inom räckvidden
-      if (!started)
+    if (warmup < WARMUP_FRAMES)
+    {
+      // Inlärning vid start: medelvärdet av de första mätningarna blir det normala bruset,
+      // i stället för en enda (slumpmässig) mätning.
+      warmup++;
+      for (int z = minZone; z <= maxZone; z++)
       {
-        normal[z] = energy[z];
-        level[z] = energy[z];
+        normal[z] += (energy[z] - normal[z]) / warmup;
+        level[z] = normal[z];
       }
-      level[z] += (energy[z] - level[z]) * 0.2; // utjämnad nivå (ca 0,5 s)
-      if (level[z] > normal[z] * SENSITIVITY_FACTOR + SENSITIVITY_MARGIN)
-        moving = true;
     }
-    started = true;
-
-    if (moving)
-      lastSeen = millis();
     else
-      for (int z = minZone; z <= maxZone; z++) // ingen rörelse: lär in det normala långsamt
-        normal[z] += (level[z] - normal[z]) * 0.002;
+    {
+      bool moving = false;
+      for (int z = minZone; z <= maxZone; z++)
+      { // bara zonerna inom räckvidden
+        level[z] += (energy[z] - level[z]) * 0.2; // utjämnad nivå (ca 0,5 s)
+        if (level[z] > normal[z] * SENSITIVITY_FACTOR + SENSITIVITY_MARGIN)
+          moving = true;
+      }
+
+      if (moving)
+        lastSeen = millis();
+      float learn = moving ? LEARN_MOVING : LEARN_IDLE;
+      for (int z = minZone; z <= maxZone; z++)
+        normal[z] += (level[z] - normal[z]) * learn;
+    }
   }
 
   // Skriv ut när statusen ändras
@@ -139,7 +155,7 @@ void mmwave_update()
   }
 }
 
-// NÄRVARO = rörelse de senaste 10 sekunderna
+// NÄRVARO = rörelse de senaste HOLD_MS (5 s)
 bool mmwave_present()
 {
   return lastSeen > 0 && millis() - lastSeen < HOLD_MS;
