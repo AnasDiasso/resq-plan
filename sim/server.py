@@ -295,10 +295,14 @@ class Hub:
                 if gone:
                     r = {"mode": "OFF", "next": None, "dm": 0}
                 path = routing.path_of(res, i) if (r["mode"] in ("LEFT", "RIGHT") and not gone) else []
+                meters = r["dm"] / 10.0
+                if r["mode"] == "X" and not gone:          # vägen ut för den som står vid larmet (noden visar ändå X)
+                    path, dm = routing.escape(self.topo, self.alarms, i, res)
+                    meters = dm / 10.0
                 nodes.append({
                     "id": i, "name": n["name"], "floor": n["floor"], "x": n["x"], "y": n["y"],
                     "exit_dir": n.get("exit_dir", "down"),
-                    "mode": r["mode"], "next": r["next"], "meters": r["dm"] / 10.0, "path": path,
+                    "mode": r["mode"], "next": r["next"], "meters": meters, "path": path,
                     "removed": gone,
                     "real": board is not None,
                     "real_signal": board.signal if board is not None else None,

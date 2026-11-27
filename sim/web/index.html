@@ -431,7 +431,9 @@ function showTip(ev, n) {
   if (!n || (drag && drag.moved)) { tip.style.display = 'none'; return; }
   let route = '';
   if (n.removed) route = '<b>saknas</b>, platsen är ledig';
-  else if (n.mode === 'X') route = '<b>larmar</b>';
+  else if (n.mode === 'X') route = '<b>larmar</b> (visar X för alla andra)<br>' + (n.path.length
+      ? `väg ut härifrån: ${n.path.join(' → ')}<br>ca ${n.meters.toFixed(1)} m`
+      : 'ingen väg ut härifrån utan att gå genom larmet');
   else if (n.mode === 'OFF') route = 'inga larm';
   else if (n.mode === 'NONE') route = '<b>ingen väg ut</b>';
   else route = `lampa ${n.mode === 'LEFT' ? 'grön (LEFT)' : 'gul (RIGHT)'}<br>väg: ${n.path.join(' → ')}<br>ca ${n.meters.toFixed(1)} m`;

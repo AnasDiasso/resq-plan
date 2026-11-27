@@ -4,6 +4,7 @@
   {
    "id": 1,
    "name": "Trapphus vä plan 1 (entré)",
+   "kind": "stair",
    "floor": 1,
    "x": 380,
    "y": 248,
@@ -15,6 +16,7 @@
   {
    "id": 2,
    "name": "Trapphus vä plan 2",
+   "kind": "stair",
    "floor": 2,
    "x": 375,
    "y": 495,
@@ -23,6 +25,7 @@
   {
    "id": 3,
    "name": "Trapphus vä plan 3",
+   "kind": "stair",
    "floor": 3,
    "x": 368,
    "y": 795,
@@ -31,6 +34,7 @@
   {
    "id": 4,
    "name": "Trapphus hö plan 1 (entré)",
+   "kind": "stair",
    "floor": 1,
    "x": 1082,
    "y": 232,
@@ -42,6 +46,7 @@
   {
    "id": 5,
    "name": "Trapphus hö plan 2",
+   "kind": "stair",
    "floor": 2,
    "x": 1082,
    "y": 505,
@@ -50,6 +55,7 @@
   {
    "id": 6,
    "name": "Trapphus hö plan 3",
+   "kind": "stair",
    "floor": 3,
    "x": 1065,
    "y": 790,
@@ -57,49 +63,56 @@
   },
   {
    "id": 7,
-   "name": "Korridor/rum plan 3 – korridor vä (B1)",
+   "name": "Hall plan 3 – vänster (B1)",
+   "kind": "hall",
    "floor": 3,
    "x": 385,
    "y": 950
   },
   {
    "id": 8,
-   "name": "Korridor/rum plan 3 – dörr 1 (B2)",
+   "name": "Dörr plan 3 – dörr 1 (B2)",
+   "kind": "door",
    "floor": 3,
    "x": 430,
    "y": 1020
   },
   {
    "id": 9,
-   "name": "Korridor/rum plan 3 – dörr 2 (B3)",
+   "name": "Dörr plan 3 – dörr 2 (B3)",
+   "kind": "door",
    "floor": 3,
    "x": 598,
    "y": 1015
   },
   {
    "id": 10,
-   "name": "Korridor/rum plan 3 – korridor mitt (B4)",
+   "name": "Hall plan 3 – mitt (B4)",
+   "kind": "hall",
    "floor": 3,
    "x": 678,
    "y": 955
   },
   {
    "id": 11,
-   "name": "Korridor/rum plan 3 – dörr 3 (B5)",
+   "name": "Dörr plan 3 – dörr 3 (B5)",
+   "kind": "door",
    "floor": 3,
    "x": 737,
    "y": 1020
   },
   {
    "id": 12,
-   "name": "Korridor/rum plan 3 – dörr 4 (B6)",
+   "name": "Hall plan 3 – höger (B6)",
+   "kind": "hall",
    "floor": 3,
    "x": 990,
    "y": 1035
   },
   {
    "id": 13,
-   "name": "Korridor/rum plan 3 – korridor hö (B7)",
+   "name": "Dörr plan 3 – dörr 4 (B7)",
+   "kind": "door",
    "floor": 3,
    "x": 1125,
    "y": 1060
@@ -107,6 +120,7 @@
   {
    "id": 14,
    "name": "Korridor/rum plan 3 – rum söder 1 (B8)",
+   "kind": "room",
    "floor": 3,
    "x": 468,
    "y": 1240
@@ -114,6 +128,7 @@
   {
    "id": 15,
    "name": "Korridor/rum plan 3 – rum söder 2 (B9)",
+   "kind": "room",
    "floor": 3,
    "x": 678,
    "y": 1240
@@ -121,6 +136,7 @@
   {
    "id": 16,
    "name": "Korridor/rum plan 3 – rum söder 3 (B10)",
+   "kind": "room",
    "floor": 3,
    "x": 888,
    "y": 1240
@@ -128,6 +144,7 @@
   {
    "id": 17,
    "name": "Korridor/rum plan 3 – rum söder 2, andra sidan dörren (B9b)",
+   "kind": "room",
    "floor": 3,
    "x": 730,
    "y": 1240
@@ -135,6 +152,7 @@
   {
    "id": 18,
    "name": "Korridor/rum plan 3 – rum söder 3, andra sidan dörren (B10b)",
+   "kind": "room",
    "floor": 3,
    "x": 940,
    "y": 1240
@@ -178,57 +196,15 @@
    "lamp": "RIGHT"
   },
   {
-   "from": 6,
-   "to": 13,
-   "m": 13.8,
-   "lamp": "LEFT"
-  },
-  {
-   "from": 13,
-   "to": 6,
-   "m": 13.8,
-   "lamp": "LEFT"
-  },
-  {
-   "from": 7,
-   "to": 8,
-   "m": 4.2,
-   "lamp": "LEFT"
-  },
-  {
    "from": 8,
    "to": 7,
    "m": 4.2,
    "lamp": "LEFT"
   },
   {
-   "from": 8,
-   "to": 9,
-   "m": 8.4,
-   "lamp": "RIGHT"
-  },
-  {
-   "from": 9,
-   "to": 8,
-   "m": 8.4,
-   "lamp": "RIGHT"
-  },
-  {
    "from": 9,
    "to": 10,
    "m": 5.0,
-   "lamp": "LEFT"
-  },
-  {
-   "from": 10,
-   "to": 9,
-   "m": 5.0,
-   "lamp": "RIGHT"
-  },
-  {
-   "from": 10,
-   "to": 11,
-   "m": 4.4,
    "lamp": "LEFT"
   },
   {
@@ -242,18 +218,6 @@
    "to": 12,
    "m": 12.7,
    "lamp": "RIGHT"
-  },
-  {
-   "from": 12,
-   "to": 11,
-   "m": 12.7,
-   "lamp": "RIGHT"
-  },
-  {
-   "from": 12,
-   "to": 13,
-   "m": 6.9,
-   "lamp": "LEFT"
   },
   {
    "from": 13,
@@ -302,6 +266,78 @@
    "to": 12,
    "m": 10.5,
    "lamp": "RIGHT"
+  },
+  {
+   "from": 7,
+   "to": 10,
+   "m": 14.7,
+   "lamp": "LEFT"
+  },
+  {
+   "from": 10,
+   "to": 7,
+   "m": 14.7,
+   "lamp": "RIGHT"
+  },
+  {
+   "from": 10,
+   "to": 12,
+   "m": 16.1,
+   "lamp": "LEFT"
+  },
+  {
+   "from": 12,
+   "to": 10,
+   "m": 16.1,
+   "lamp": "RIGHT"
+  },
+  {
+   "from": 12,
+   "to": 6,
+   "m": 12.8,
+   "lamp": "LEFT"
+  },
+  {
+   "from": 6,
+   "to": 12,
+   "m": 12.8,
+   "lamp": "LEFT"
+  },
+  {
+   "from": 8,
+   "to": 10,
+   "m": 12.8,
+   "lamp": "RIGHT"
+  },
+  {
+   "from": 9,
+   "to": 7,
+   "m": 11.1,
+   "lamp": "RIGHT"
+  },
+  {
+   "from": 14,
+   "to": 15,
+   "m": 10.5,
+   "lamp": "LEFT"
+  },
+  {
+   "from": 15,
+   "to": 14,
+   "m": 10.5,
+   "lamp": "LEFT"
+  },
+  {
+   "from": 13,
+   "to": 6,
+   "m": 13.8,
+   "lamp": "LEFT"
+  },
+  {
+   "from": 16,
+   "to": 11,
+   "m": 13.3,
+   "lamp": "LEFT"
   }
  ]
 }
