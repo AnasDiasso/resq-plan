@@ -71,6 +71,62 @@ for _ in range(300):
     same(set(random.sample(ids, random.randint(3, 8)))); n += 1
 print(f"OK: routing.py == C++ i {n} larmscenarier (nästa nod, pil och längd för alla noder)")
 
+# ---------------------------------------------------------------- 1b. hall, dörrar och rum
+# Hallen (7, 10, 12) leder till trapphusen. Dörrar (8, 9, 11, 13) och rum (14-18) är inte genomfart.
+SCENARIOS = [
+    ({3}, 7, [7, 10, 12, 6, 5, 4, "UT"]),                 # 1: vänster trapphus stängt
+    ({7}, 8, [8, 10, 12, 6, 5, 4, "UT"]),                 # 2: hallen vid dörr 1 larmar
+    ({8, 9}, 14, [14, 15, 17, 11, 12, 6, 5, 4, "UT"]),    # 3: båda dörrarna till rum 14 larmar
+    ({3}, 13, [13, 6, 5, 4, "UT"]),                      # dörr 4 går direkt till trapphuset vid 6
+    ({12}, 13, [13, 6, 5, 4, "UT"]),                     # ... även när hallen vid 12 larmar
+    ({6}, 13, [13, 12, 10, 7, 3, 2, 1, "UT"]),           # trapphuset vid 6 stängt: via hallen
+    ({7, 18}, 16, [16, 11, 12, 6, 5, 4, "UT"]),          # rum 16: ut genom egna dörren vid 11 när 18 larmar
+    ({17, 18}, 16, [16, 11, 12, 6, 5, 4, "UT"]),
+]
+for alarms, start, want in SCENARIOS:
+    got = routing.path_of(routing.compute(topo, alarms), start)
+    check(got == want, f"larm {sorted(alarms)} nod {start}: väg {got}, väntade {want}")
+    check(cpp(alarms)[start][1] == str(want[1]), f"larm {sorted(alarms)} nod {start}: C++ går till {cpp(alarms)[start][1]}, väntade {want[1]}")
+
+kind = {i: topo.nodes[i].get("kind") for i in ids}
+check(all(kind[i] in ("stair", "hall", "door", "room") for i in ids), "alla noder ska ha kind")
+for a in ids:                                            # inget enskilt larm får lämna en annan nod utan väg ut
+    none = [i for i, r in routing.compute(topo, {a}).items() if r["mode"] == "NONE"]
+    check(not none, f"larm {a}: frågetecken på {none}")
+through = [i for i in ids if kind[i] in ("stair", "hall")]
+random.seed(5)
+groups = [{a} for a in ids] + [set(p) for p in itertools.combinations(ids, 2)] + \
+         [set(random.sample(ids, random.randint(3, 8))) for _ in range(300)]
+n_paths = 0
+for alarms in groups:
+    res = routing.compute(topo, alarms)
+    for i in through:
+        path = routing.path_of(res, i)
+        bad = [j for j in path[1:] if j != "UT" and kind[j] in ("door", "room")]
+        check(not bad, f"larm {sorted(alarms)}: vägen från {kind[i]} {i} går via dörr/rum {bad}: {path}")
+        n_paths += 1
+print(f"OK: {len(SCENARIOS)} scenarier, och {n_paths} vägar från hall och trapphus går aldrig via dörr eller rum")
+
+# ---------------------------------------------------------------- 1c. vägen ut från en nod som larmar
+for alarms, start, want in [({3}, 3, [3, 7, 10, 12, 6, 5, 4, "UT"]),   # trapphuset stängt: via hallen
+                            ({7}, 7, [7, 3, 2, 1, "UT"]),
+                            ({3}, 1, [1, "UT"]),                       # står vid utgången: ut där
+                            ({3}, 2, [])]:                             # plan 2 i stängt trapphus: ingen väg
+    got = routing.escape(topo, alarms, start)[0]
+    check(got == want, f"larm {sorted(alarms)}: vägen ut från nod {start} är {got}, väntade {want}")
+n_esc = 0
+for alarms in groups:
+    res = routing.compute(topo, alarms)
+    closed = topo.closed(alarms)
+    for i in closed:
+        path, dm = routing.escape(topo, alarms, i, res)
+        check(not [j for j in path[1:] if j in closed], f"larm {sorted(alarms)}: vägen ut från {i} går genom stängd nod: {path}")
+        if path and path[1] != "UT":                     # lika lång som kanten + grannens väg ut
+            e = next(d for f, t, d, _ in topo.edges if f == i and t == path[1])
+            check(dm == e + res[path[1]]["dm"], f"larm {sorted(alarms)}: fel längd från {i}")
+        n_esc += 1
+print(f"OK: vägen ut från noder som larmar ({n_esc} fall) går aldrig genom en stängd nod")
+
 # ---------------------------------------------------------------- 2. hela kedjan
 host = subprocess.run([ROOT + "/host_test/build_node_host.sh"], capture_output=True, text=True, check=True).stdout.strip()
 REAL = 3
@@ -201,6 +257,8 @@ check(sorted(map(tuple, state()["links"])) == [(1, 2), (2, 3), (4, 5), (5, 6)], 
 # i2) dra bort och sätt tillbaka noder
 api("POST", "/api/clear", {})
 api("POST", "/api/click", {"id": 9})
+s9 = node(state(), 9)
+check(s9["mode"] == "X" and s9["path"] == [9, 7, 3, 2, 1, "UT"] and s9["meters"] == 54.9, f"nod 9 som larmar ska visa vägen ut härifrån: {s9}")
 before = {n["id"]: (n["mode"], n["next"]) for n in state()["nodes"] if n["id"] != 9}
 check(api("POST", "/api/remove", {"id": 9})[0] == 200, "remove svarar 200")
 s9 = [n for n in state()["nodes"] if n["id"] == 9][0]

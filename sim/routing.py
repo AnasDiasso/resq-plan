@@ -71,6 +71,22 @@ def compute(topo, alarms):
     return out
 
 
+def escape(topo, alarms, start, res=None):
+    """Bästa vägen ut för den som står vid en stängd nod (larmar själv eller ligger i en larmande zon).
+    Noden visar fortfarande X för alla andra. Härifrån får man bara gå vidare genom noder som inte är stängda,
+    eller ut genom nodens egen utgång. Returnerar (väg, dm), där väg är [start, ..., 'UT'], eller ([], 0)."""
+    res = res if res is not None else compute(topo, alarms)
+    best_total, best_path = INF, []
+    if topo.exit_dm[start] > 0:
+        best_total, best_path = topo.exit_dm[start], [start, "UT"]
+    for frm, to, dm, _ in topo.edges:                 # kantordningen avgör vid lika långa vägar, som i compute
+        if frm != start or res[to]["mode"] not in ("LEFT", "RIGHT"):
+            continue
+        if dm + res[to]["dm"] < best_total:
+            best_total, best_path = dm + res[to]["dm"], [start] + path_of(res, to)
+    return (best_path, best_total) if best_path else ([], 0)
+
+
 def path_of(res, start):
     """Nodernas väg ut: [start, nästa, ..., 'UT'] (tom om ingen väg)."""
     path, cur = [start], start

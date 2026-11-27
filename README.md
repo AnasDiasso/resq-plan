@@ -398,14 +398,42 @@ The stairwell connections are:
 6 → 5 → 4
 ```
 
-### Corridor Connections
+### Floor 3: Hall, Doors and Rooms
 
-```text
-3 ↔ 7
-6 ↔ 13
-```
+Every node in `topology.json` has a `kind`: `stair` (1–6), `hall`, `door` or `room`. The edges follow three rules:
 
-The two southern rooms on floor 3 each have a door with a node on either side: 15 ↔ 17 (door at x ≈ 704) and 16 ↔ 18 (door at x ≈ 914). People in those rooms go through the door to 17 or 18 and on to the corridor at 11 or 12, instead of straight through the wall.
+1. **Hall (7, 10, 12).** The hall is the way out. It runs between the two stairwells, in both directions:
+
+   ```text
+   3 ↔ 7 ↔ 10 ↔ 12 ↔ 6
+   ```
+
+2. **Doors (8, 9, 11, 13).** A door is never a way through. Doors only have edges *towards* the hall (or, for door 13, straight to the stairwell at 6), never from the hall and never to another door. A route that starts in the hall or a stairwell therefore never enters a door or a room.
+
+   ```text
+   8 → 7, 10      9 → 7, 10      11 → 10, 12      13 → 6, 12
+   ```
+
+3. **Rooms (14–18).** A room only leads out through its door. The two southern rooms each have a door with a node on either side: 15 ↔ 17 (door at x ≈ 704) and 16 ↔ 18 (door at x ≈ 914).
+
+   ```text
+   14 → 8         14 ↔ 15        15 ↔ 17 → 11        16 ↔ 18 → 12        16 → 11
+   ```
+
+   Room 14 can also go through room 15, so that it still has a way out when doors 8 and 9 both have an alarm.
+   Node 16 is in the same room as door 11, so it can go straight to 11 when 18 has an alarm.
+
+Examples:
+
+| Alarm   | Node | Route out                               |
+| ------- | ---- | --------------------------------------- |
+| 3       | 7    | 7 → 10 → 12 → 6 → 5 → 4                 |
+| 7       | 8    | 8 → 10 → 12 → 6 → 5 → 4                 |
+| 8 and 9 | 14   | 14 → 15 → 17 → 11 → 12 → 6 → 5 → 4      |
+| 12      | 13   | 13 → 6 → 5 → 4                          |
+| 7 and 18 | 16  | 16 → 11 → 12 → 6 → 5 → 4                |
+
+New distances are the straight-line pixel distance in the map × 0.05 m.
 
 ### Directional Lamp Extraction
 
@@ -629,6 +657,7 @@ The 2D view displays the building layout and the current state of every node.
 - Animated alarm propagation.
 - Pulsating alarm indicators.
 - Animated route highlighting when hovering over a path.
+- Hovering over a node with a red X shows the best way out for someone standing at the alarm. The node itself keeps showing the red X to everyone else, and the route never passes through another closed node. This is only shown in the simulator; the boards are unchanged.
 
 ### Interactive Node Removal
 

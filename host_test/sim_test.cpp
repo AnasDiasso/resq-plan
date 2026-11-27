@@ -208,14 +208,14 @@ int main() {
         auto type = [&](const char *s, uint32_t adv = 60) { g_serialIn = s; g_ms += adv; n.update(); };
         auto pins = [&](int x, int l, int r) { return g_pin[2] == x && g_pin[23] == l && g_pin[22] == r; };
         CHECK(pins(0, 0, 0), "start: lamporna ska vara släckta");
-        type("n10\n"); type("a9\n");            CHECK(pins(0, 1, 0), "n10, a9 -> vänster (grön)");
+        type("n10\n"); type("a9\n");            CHECK(pins(0, 0, 1), "n10, a9 -> mot nod 7 (gul)");
         type("c");                              CHECK(pins(0, 0, 0), "c rensar");
         type("n3\n"); type("a2\n");             CHECK(pins(1, 0, 0), "n3, a2 -> X (samma trapphus)");
-        type("c"); type("n7\n"); type("a2\n");  CHECK(pins(0, 1, 0), "n7, a2 -> vänster (grön, mot nod 8)");
+        type("c"); type("n7\n"); type("a2\n");  CHECK(pins(0, 1, 0), "n7, a2 -> mot nod 10 (grön)");
         type("c"); type("n9\n"); type("a9\n");  CHECK(pins(1, 0, 0), "n9, a9 -> X");
-        type("c"); type("n7\n"); type("a2\n"); type("a8\n"); CHECK(pins(0, 0, 0), "n7, larm 2 och 8 -> ingen väg");
+        type("c"); type("n7\n"); type("a2\n"); type("a10\n"); CHECK(pins(0, 0, 0), "n7, larm 2 och 10 -> ingen väg");
         type("c"); type("n10"); g_ms += 900; type("", 0); type("a9"); g_ms += 900; type("", 0);
-        CHECK(pins(0, 1, 0), "tal utan Enter räknas efter tidsgräns");
+        CHECK(pins(0, 0, 1), "tal utan Enter räknas efter tidsgräns (n10, a9 -> gul)");
         type("c"); type("a99\n");               CHECK(pins(0, 0, 0), "okänt id ignoreras");
         type("x"); CHECK(pins(1, 0, 0), "x");  type("l"); CHECK(pins(0, 1, 0), "l");
         type("r"); CHECK(pins(0, 0, 1), "r");  type("o"); CHECK(pins(0, 0, 0), "o");
